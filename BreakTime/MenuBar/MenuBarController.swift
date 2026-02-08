@@ -1,0 +1,124 @@
+import AppKit
+
+@MainActor
+class MenuBarController: NSObject, NSMenuDelegate {
+    private var statusItem: NSStatusItem?
+    private var menuBuilder: TrayMenuBuilder?
+    private var displayTimer: Timer?
+
+    weak var appState: AppState?
+
+    var onPause: ((TimeInterval?) -> Void)?       // nil = indefinite
+    var onResume: (() -> Void)?
+    var onTakeBreakNow: ((BreakTier) -> Void)?
+    var onTestBreak: ((BreakTier) -> Void)?
+    var onOpenSettings: (() -> Void)?
+
+    func setup(appState: AppState) {
+        self.appState = appState
+
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+        menuBuilder = TrayMenuBuilder(appState: appState)
+        menuBuilder?.onLaunchAtLoginToggled = {
+            LaunchAtLoginManager.shared.toggle()
+        }
+        menuBuilder?.onPause = { [weak self] duration in
+            self?.onPause?(duration)
+        }
+        menuBuilder?.onResume = { [weak self] in
+            self?.onResume?()
+        }
+        menuBuilder?.onTakeBreakNow = { [weak self] tier in
+            self?.onTakeBreakNow?(tier)
+        }
+        menuBuilder?.onTestBreak = { [weak self] tier in
+            self?.onTestBreak?(tier)
+        }
+        menuBuilder?.onOpenSettings = { [weak self] in
+            self?.onOpenSettings?()
+        }
+        menuBuilder?.onQuit = {
+            NSApplication.shared.terminate(nil)
+        }
+
+        startDisplayTimer()
+        updateMenu()
+    }
+
+    func updateMenu() {
+        guard let menuBuilder = menuBuilder else { return }
+        let menu = menuBuilder.buildMenu()
+        menu.delegate = self
+        statusItem?.menu = menu
+    }
+
+    // Rebuild menu with fresh countdowns right when it opens
+    nonisolated func menuWillOpen(_ menu: NSMenu) {
+        MainActor.assumeIsolated {
+            guard let menuBuilder = self.menuBuilder else { return }
+            menu.removeAllItems()
+            for item in menuBuilder.buildMenu().items {
+                // Move items from new menu to existing one
+                item.menu?.removeItem(item)
+                menu.addItem(item)
+            }
+        }
+    }
+
+    func updateTitle() {
+        guard let appState = appState, let button = statusItem?.button else { return }
+
+        if appState.pauseState.isPaused {
+            button.image = makeDotImage(color: .gray)
+            if let remaining = appState.pauseState.remainingSeconds {
+                button.title = " \u{23F8} \(formatTimerDisplay(remaining))"
+            } else {
+                button.title = " \u{23F8} Paused"
+            }
+            return
+        }
+
+        if case .idle = appState.breakPhase, let countdown = appState.nextBreakCountdown,
+           let tier = appState.nextBreakTier {
+            button.image = makeDotImage(color: tier.color.nsColor)
+            button.title = " \(formatTimerDisplay(countdown))"
+        } else {
+            button.image = makeDotImage(color: .gray)
+            button.title = ""
+        }
+    }
+
+    private func makeDotImage(color: NSColor) -> NSImage {
+        let size = NSSize(width: 10, height: 10)
+        let image = NSImage(size: size, flipped: false) { rect in
+            color.setFill()
+            NSBezierPath(ovalIn: rect.insetBy(dx: 1, dy: 1)).fill()
+            return true
+        }
+        image.isTemplate = false
+        return image
+    }
+
+    private func startDisplayTimer() {
+        displayTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateTitle()
+            }
+        }
+    }
+
+}
+
+func formatTimerDisplay(_ seconds: TimeInterval) -> String {
+    let totalSeconds = Int(seconds)
+    let h = totalSeconds / 3600
+    let m = (totalSeconds % 3600) / 60
+    let s = totalSeconds % 60
+
+    if h > 0 {
+        return String(format: "%d:%02d:%02d", h, m, s)
+    } else {
+        return String(format: "%d:%02d", m, s)
+    }
+}

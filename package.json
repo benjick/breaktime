@@ -1,0 +1,11 @@
+{
+  "name": "breaktime",
+  "version": "1.0.0",
+  "description": "macOS menu bar app that reminds users to take breaks to prevent RSI",
+  "scripts": {
+    "build": "swift build",
+    "build:release": "bash scripts/build-app.sh",
+    "install": "bash scripts/install.sh",
+    "run": "swift run"
+  }
+}
