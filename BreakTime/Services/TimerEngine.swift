@@ -27,7 +27,7 @@ class TimerEngine {
         ) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self, let appState = self.appState else { return }
-                let idleSeconds = IdleDetector.secondsSinceLastInput(monitoring: appState.config.inputMonitoring)
+                let idleSeconds = IdleDetector.secondsSinceLastInput()
                 if idleSeconds > appState.config.idleThreshold {
                     appState.unwindCounters(by: idleSeconds)
                 }
@@ -68,7 +68,7 @@ class TimerEngine {
         }
 
         // Query idle
-        let idleSeconds = IdleDetector.secondsSinceLastInput(monitoring: appState.config.inputMonitoring)
+        let idleSeconds = IdleDetector.secondsSinceLastInput()
 
         if idleSeconds < appState.config.idleThreshold {
             // User is active — increment all counters

@@ -29,14 +29,6 @@ struct GeneralSettingsView: View {
                     )
                 }
 
-                Picker("Input monitoring", selection: Binding(
-                    get: { appState.config.inputMonitoring },
-                    set: { appState.config.inputMonitoring = $0; saveConfig() }
-                )) {
-                    Text("Keyboard only (recommended)").tag(InputMonitoring.keyboard)
-                    Text("Mouse only").tag(InputMonitoring.mouse)
-                    Text("Both").tag(InputMonitoring.both)
-                }
             }
 
             Section("Break Merging") {

@@ -159,7 +159,7 @@ class BreakScheduler {
                 guard let self = self, let appState = self.appState,
                       var overlayState = appState.overlayState else { return }
 
-                let idleSeconds = IdleDetector.secondsSinceLastInput(monitoring: appState.config.inputMonitoring)
+                let idleSeconds = IdleDetector.secondsSinceLastInput()
 
                 if overlayState.isGracePeriod {
                     // Grace period: wait for 5 seconds of no input
