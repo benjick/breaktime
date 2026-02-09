@@ -8,6 +8,7 @@ class BreakScheduler {
     private var overlayTimer: Timer?
     private var graceTimer: Timer?
     private var warningStartTime: Date?
+    private var sleepPreventionActivity: NSObjectProtocol?
 
     var onBreakStarted: (() -> Void)?
     var onBreakEnded: (() -> Void)?
@@ -92,6 +93,10 @@ class BreakScheduler {
 
         appState.breakPhase = .warning(tier: tier, startedAt: Date())
         warningStartTime = Date()
+        sleepPreventionActivity = ProcessInfo.processInfo.beginActivity(
+            options: .idleSystemSleepDisabled,
+            reason: "Break in progress"
+        )
         onBreakStarted?()
 
         // Show warning border windows
@@ -258,6 +263,10 @@ class BreakScheduler {
         graceTimer?.invalidate()
         graceTimer = nil
         overlayManager?.hideAll()
+        if let activity = sleepPreventionActivity {
+            ProcessInfo.processInfo.endActivity(activity)
+            sleepPreventionActivity = nil
+        }
     }
 
     // MARK: - Notification Handlers
