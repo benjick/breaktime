@@ -54,8 +54,9 @@ class BreakScheduler {
 
         // If exceptions are active, queue the break
         if appState.exceptionsActive {
-            appState.queuedBreaks.insert(tier.id)
-            BreakLogger.shared.log(tierName: tier.name, tierColor: tier.color.rawValue, event: .deferred, reason: appState.exceptionReason ?? "exception")
+            if appState.queuedBreaks.insert(tier.id).inserted {
+                BreakLogger.shared.log(tierName: tier.name, tierColor: tier.color.rawValue, event: .deferred, reason: appState.exceptionReason ?? "exception")
+            }
             return
         }
 

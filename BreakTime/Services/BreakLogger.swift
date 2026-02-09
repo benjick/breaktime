@@ -18,6 +18,10 @@ class BreakLogger {
 
     private init() {}
 
+    func clearAll() {
+        save([])
+    }
+
     func log(_ entry: BreakLogEntry) {
         var entries = loadEntries()
         entries.append(entry)

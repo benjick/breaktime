@@ -5,6 +5,7 @@ class MenuBarController: NSObject, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var menuBuilder: TrayMenuBuilder?
     private var displayTimer: Timer?
+    private var pulseToggle = false
 
     weak var appState: AppState?
 
@@ -79,9 +80,14 @@ class MenuBarController: NSObject, NSMenuDelegate {
             return
         }
 
-        if case .idle = appState.breakPhase, let countdown = appState.nextBreakCountdown,
+        if case .warning(let tier, _) = appState.breakPhase {
+            pulseToggle.toggle()
+            button.image = makeDotImage(color: tier.color.nsColor, hollow: pulseToggle)
+            button.title = ""
+        } else if case .idle = appState.breakPhase, let countdown = appState.nextBreakCountdown,
            let tier = appState.nextBreakTier {
-            button.image = makeDotImage(color: tier.color.nsColor)
+            let deferred = !appState.queuedBreaks.isEmpty
+            button.image = makeDotImage(color: tier.color.nsColor, hollow: deferred)
             button.title = " \(formatTimerDisplay(countdown))"
         } else {
             button.image = makeDotImage(color: .gray)
@@ -89,11 +95,19 @@ class MenuBarController: NSObject, NSMenuDelegate {
         }
     }
 
-    private func makeDotImage(color: NSColor) -> NSImage {
+    private func makeDotImage(color: NSColor, hollow: Bool = false) -> NSImage {
         let size = NSSize(width: 10, height: 10)
         let image = NSImage(size: size, flipped: false) { rect in
-            color.setFill()
-            NSBezierPath(ovalIn: rect.insetBy(dx: 1, dy: 1)).fill()
+            let inset = rect.insetBy(dx: 1, dy: 1)
+            if hollow {
+                color.setStroke()
+                let path = NSBezierPath(ovalIn: inset.insetBy(dx: 0.75, dy: 0.75))
+                path.lineWidth = 1.5
+                path.stroke()
+            } else {
+                color.setFill()
+                NSBezierPath(ovalIn: inset).fill()
+            }
             return true
         }
         image.isTemplate = false

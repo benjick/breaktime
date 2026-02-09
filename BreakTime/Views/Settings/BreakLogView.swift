@@ -42,6 +42,15 @@ struct BreakLogView: View {
                 .font(.system(size: 12))
             }
         }
+        .overlay(alignment: .bottomTrailing) {
+            if !entries.isEmpty {
+                Button("Clear Log") {
+                    BreakLogger.shared.clearAll()
+                    entries = []
+                }
+                .padding(8)
+            }
+        }
         .onAppear {
             entries = BreakLogger.shared.loadEntries()
         }

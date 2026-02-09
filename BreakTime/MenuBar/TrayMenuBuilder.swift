@@ -19,6 +19,7 @@ class TrayMenuBuilder {
     func buildMenu() -> NSMenu {
         let menu = NSMenu()
 
+        addBreakNowPrompt(to: menu)
         addTierStatuses(to: menu)
         menu.addItem(NSMenuItem.separator())
         addLaunchAtLogin(to: menu)
@@ -31,6 +32,24 @@ class TrayMenuBuilder {
         addQuitItem(to: menu)
 
         return menu
+    }
+
+    // MARK: - Break Now Prompt (during warning phase)
+
+    private func addBreakNowPrompt(to menu: NSMenu) {
+        guard let appState = appState,
+              case .warning(let tier, _) = appState.breakPhase else { return }
+
+        let item = NSMenuItem(
+            title: "Break Now — \(tier.name)",
+            action: #selector(breakNowPromptClicked(_:)),
+            keyEquivalent: ""
+        )
+        item.target = self
+        item.representedObject = tier.id
+        item.image = makeDotImage(color: tier.color.nsColor)
+        menu.addItem(item)
+        menu.addItem(NSMenuItem.separator())
     }
 
     // MARK: - Tier Statuses
@@ -191,6 +210,12 @@ class TrayMenuBuilder {
 
     @objc private func resumeClicked(_ sender: NSMenuItem) {
         onResume?()
+    }
+
+    @objc private func breakNowPromptClicked(_ sender: NSMenuItem) {
+        guard let tierId = sender.representedObject as? UUID,
+              let tier = appState?.config.tiers.first(where: { $0.id == tierId }) else { return }
+        onTakeBreakNow?(tier)
     }
 
     @objc private func takeBreakNowClicked(_ sender: NSMenuItem) {
