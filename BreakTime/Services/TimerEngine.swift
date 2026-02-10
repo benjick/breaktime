@@ -108,7 +108,7 @@ class TimerEngine {
             guard otherTier.breakDuration > tier.breakDuration else { continue }
             let otherCounter = appState.tierCounters[otherTier.id, default: 0]
             let otherRemaining = otherTier.activeInterval - otherCounter
-            if otherRemaining > 0 && otherRemaining <= appState.config.mergeWindow {
+            if otherRemaining <= appState.config.mergeWindow {
                 return otherTier
             }
         }

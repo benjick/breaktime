@@ -8,10 +8,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let breakScheduler = BreakScheduler()
     private let exceptionMonitor = ExceptionMonitor()
     private let settingsWindowController = SettingsWindowController()
+    private let slackIntegration = SlackIntegration()
     private let configManager = ConfigManager.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadConfig()
+        slackIntegration.updateToken(appState.config.slackToken)
         setupBreakScheduler()
         setupExceptionMonitor()
         setupMenuBar()
@@ -74,12 +76,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupBreakScheduler() {
         breakScheduler.setup(appState: appState)
 
-        breakScheduler.onBreakStarted = { [weak self] in
+        breakScheduler.onBreakStarted = { [weak self] tier in
             self?.menuBarController.updateMenu()
+            self?.slackIntegration.breakStarted(breakDuration: tier.breakDuration)
         }
 
         breakScheduler.onBreakEnded = { [weak self] in
             self?.menuBarController.updateMenu()
+            self?.slackIntegration.breakEnded()
         }
     }
 
@@ -89,9 +93,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         exceptionMonitor.onExceptionStateChanged = { [weak self] isActive in
             guard let self = self else { return }
             if isActive {
-                // Exception started — cancel any active warning/break (tears down overlay windows too)
-                if case .idle = self.appState.breakPhase { } else {
+                // Exception started — cancel any active warning/break and re-queue it
+                switch self.appState.breakPhase {
+                case .warning(let tier, _), .overlay(let tier):
+                    self.appState.queuedBreaks.insert(tier.id)
                     self.breakScheduler.cancelCurrentBreak()
+                case .idle:
+                    break
                 }
             } else {
                 // Exception ended — fire queued breaks
@@ -115,6 +123,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     self.breakScheduler.cancelCurrentBreak()
                 }
                 self.appState.initializeCounters()
+                self.slackIntegration.updateToken(self.appState.config.slackToken)
                 self.menuBarController.updateMenu()
             }
         }

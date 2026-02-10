@@ -10,7 +10,7 @@ class BreakScheduler {
     private var warningStartTime: Date?
     private var sleepPreventionActivity: NSObjectProtocol?
 
-    var onBreakStarted: (() -> Void)?
+    var onBreakStarted: ((BreakTier) -> Void)?
     var onBreakEnded: (() -> Void)?
 
     func setup(appState: AppState) {
@@ -97,7 +97,7 @@ class BreakScheduler {
             options: .idleSystemSleepDisabled,
             reason: "Break in progress"
         )
-        onBreakStarted?()
+        onBreakStarted?(tier)
 
         // Show warning border windows
         overlayManager?.showWarningBorders(color: tier.color.nsColor)
@@ -105,15 +105,16 @@ class BreakScheduler {
         // Start at 25% opacity
         overlayManager?.updateWarningOpacity(0.25)
 
-        // Ramp opacity from 25% to 100% over 30 seconds
+        // Ramp opacity from 25% to 100% over warning duration
         warningTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateWarningOpacity()
             }
         }
 
-        // After 30 seconds, transition to overlay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) { [weak self] in
+        // After warning duration, transition to overlay
+        let warningDuration = appState.config.warningDuration
+        DispatchQueue.main.asyncAfter(deadline: .now() + warningDuration) { [weak self] in
             Task { @MainActor in
                 guard let self = self, let appState = self.appState else { return }
                 if case .warning(let warnTier, _) = appState.breakPhase, warnTier.id == tier.id {
@@ -127,15 +128,16 @@ class BreakScheduler {
     func startBreakImmediately(tier: BreakTier) {
         guard appState != nil else { return }
         cancelAll()
-        onBreakStarted?()
+        onBreakStarted?(tier)
         startOverlay(tier: tier)
     }
 
     private func updateWarningOpacity() {
         guard let start = warningStartTime else { return }
         let elapsed = Date().timeIntervalSince(start)
-        // Ramp from 0.25 to 1.0 over 30 seconds
-        let opacity = 0.25 + 0.75 * min(1.0, elapsed / 30.0)
+        // Ramp from 0.25 to 1.0 over warning duration
+        let warningDuration = appState?.config.warningDuration ?? 30.0
+        let opacity = 0.25 + 0.75 * min(1.0, elapsed / warningDuration)
         overlayManager?.updateWarningOpacity(CGFloat(opacity))
     }
 

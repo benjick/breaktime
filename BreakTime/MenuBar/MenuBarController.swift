@@ -71,11 +71,11 @@ class MenuBarController: NSObject, NSMenuDelegate {
         guard let appState = appState, let button = statusItem?.button else { return }
 
         if appState.pauseState.isPaused {
-            button.image = makeDotImage(color: .gray)
+            button.image = nil
             if let remaining = appState.pauseState.remainingSeconds {
-                button.title = " \u{23F8} \(formatTimerDisplay(remaining))"
+                button.title = "\u{23F8} \(formatTimerDisplay(remaining))"
             } else {
-                button.title = " \u{23F8} Paused"
+                button.title = "\u{23F8} Paused"
             }
             return
         }
