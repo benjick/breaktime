@@ -43,6 +43,16 @@ jobs:
           {
             echo "body<<EOF"
             echo "$LOG"
+            echo ""
+            echo "## Install"
+            echo ""
+            echo "1. Download **BreakTime.dmg** below"
+            echo "2. Open the DMG and drag BreakTime to Applications"
+            echo "3. Run this once in Terminal to remove the quarantine flag:"
+            echo '   ```'
+            echo "   xattr -cr /Applications/BreakTime.app"
+            echo '   ```'
+            echo "4. Launch from Applications or Spotlight"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
