@@ -1,7 +1,14 @@
 import SwiftUI
+import AppKit
 
 struct TierEditorView: View {
     @Binding var tier: BreakTier
+
+    static let systemSounds = [
+        "Basso", "Blow", "Bottle", "Frog", "Funk",
+        "Glass", "Hero", "Morse", "Ping", "Pop",
+        "Purr", "Sosumi", "Submarine", "Tink"
+    ]
 
     var body: some View {
         Form {
@@ -74,6 +81,24 @@ struct TierEditorView: View {
                     Text("Minutes").tag(true)
                 }
                 .pickerStyle(.segmented)
+            }
+
+            Section("Completion") {
+                Picker("Sound", selection: Binding(
+                    get: { tier.completionSound ?? "" },
+                    set: { tier.completionSound = $0.isEmpty ? nil : $0 }
+                )) {
+                    Text("None").tag("")
+                    ForEach(Self.systemSounds, id: \.self) { name in
+                        Text(name).tag(name)
+                    }
+                }
+                .onChange(of: tier.completionSound) { _, newValue in
+                    if let name = newValue,
+                       let sound = NSSound(named: NSSound.Name(name)) {
+                        sound.play()
+                    }
+                }
             }
 
             Section("Break Screen") {

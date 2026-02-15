@@ -11,6 +11,7 @@ class BreakScheduler {
     private var sleepPreventionActivity: NSObjectProtocol?
 
     var onBreakStarted: ((BreakTier) -> Void)?
+    var onOverlayStarted: ((BreakTier) -> Void)?
     var onBreakEnded: (() -> Void)?
 
     func setup(appState: AppState) {
@@ -153,6 +154,7 @@ class BreakScheduler {
 
         overlayManager?.showBreakOverlay(appState: appState)
         BreakLogger.shared.log(tierName: tier.name, tierColor: tier.color.rawValue, event: .started)
+        onOverlayStarted?(tier)
 
         // Start grace period monitoring
         startGracePeriodMonitoring()
@@ -208,6 +210,11 @@ class BreakScheduler {
         let tier = overlayState.tier
 
         BreakLogger.shared.log(tierName: tier.name, tierColor: tier.color.rawValue, event: .completed)
+
+        if let soundName = tier.completionSound,
+           let sound = NSSound(named: NSSound.Name(soundName)) {
+            sound.play()
+        }
 
         cancelAll()
         appState.cascadeReset(triggeringTier: tier)

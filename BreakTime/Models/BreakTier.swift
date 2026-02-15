@@ -49,6 +49,7 @@ struct BreakTier: Codable, Identifiable, Equatable {
     var color: TierColor
     var activeInterval: TimeInterval  // seconds of active time before break
     var breakDuration: TimeInterval   // seconds the break lasts
+    var completionSound: String?
     var screenType: ScreenType
 
     static let defaultShort = BreakTier(

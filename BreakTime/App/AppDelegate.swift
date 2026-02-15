@@ -76,8 +76,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupBreakScheduler() {
         breakScheduler.setup(appState: appState)
 
-        breakScheduler.onBreakStarted = { [weak self] tier in
+        breakScheduler.onBreakStarted = { [weak self] _ in
             self?.menuBarController.updateMenu()
+        }
+
+        breakScheduler.onOverlayStarted = { [weak self] tier in
             self?.slackIntegration.breakStarted(breakDuration: tier.breakDuration)
         }
 
