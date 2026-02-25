@@ -6,6 +6,7 @@ class OverlayManager {
     private var warningWindows: [NSWindow] = []
     private var overlayWindows: [BreakOverlayWindow] = []
     private weak var currentAppState: AppState?
+    private var previousApp: NSRunningApplication?
 
     init() {
         NotificationCenter.default.addObserver(
@@ -85,6 +86,10 @@ class OverlayManager {
     // MARK: - Break Overlay
 
     func showBreakOverlay(appState: AppState) {
+        // Save the frontmost app before we take focus (only on first show, not display rebuild)
+        if previousApp == nil {
+            previousApp = NSWorkspace.shared.frontmostApplication
+        }
         hideOverlayWindows()
         currentAppState = appState
 
@@ -138,6 +143,11 @@ class OverlayManager {
     func hideAll() {
         hideWarningBorders()
         hideOverlayWindows()
+        // Restore focus to the app that was active before the break
+        if let app = previousApp {
+            app.activate()
+            previousApp = nil
+        }
     }
 }
 

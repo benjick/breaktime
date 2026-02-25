@@ -22,6 +22,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         checkPermissions()
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // Prevent quitting during an active break overlay
+        if case .overlay = appState.breakPhase {
+            return .terminateCancel
+        }
+        return .terminateNow
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         timerEngine.stop()
         exceptionMonitor.stop()
